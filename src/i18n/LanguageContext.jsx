@@ -41,7 +41,7 @@ const translations = {
       serversInvalid: 'Invalid JSON. Use only one MCP config object like { "protocol": "httpstream", ... }.',
       securityTitle: 'Security alert',
       securityText: 'This page is intended for testing MCP servers. Sensitive data added in these JSON fields is stored in your browser. Do not use sensitive or production servers. For production use, fork this project:',
-      securityLinkText: 'https://github.com/rb58853/FASTCHAT-WEB',
+      securityLinkText: 'https://github.com/rb58853/fastchat-web',
       prompts: [
         'List all available tools on this MCP server.',
         'Use the file tool to read the contents of config.json.',
@@ -129,7 +129,7 @@ const translations = {
       serversInvalid: 'JSON invalido. Usa solo un objeto de configuracion MCP como { "protocol": "httpstream", ... }.',
       securityTitle: 'Alerta de seguridad',
       securityText: 'Esta pagina es para probar servidores MCP. Los datos sensibles agregados en estos JSON quedan registrados en tu navegador. No uses servidores sensibles o de produccion. Para uso en produccion, haz fork de este proyecto:',
-      securityLinkText: 'https://github.com/rb58853/FASTCHAT-WEB',
+      securityLinkText: 'https://github.com/rb58853/fastchat-web',
       prompts: [
         'Lista todas las herramientas disponibles en este servidor MCP.',
         'Usa la herramienta de archivos para leer el contenido de config.json.',

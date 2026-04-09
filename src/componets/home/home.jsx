@@ -170,7 +170,7 @@ function Home() {
               {t.home.securityText}{' '}
               <a
                 className="home-security-link"
-                href="https://github.com/rb58853/FASTCHAT-WEB"
+                href="https://github.com/rb58853/fastchat-web"
                 target="_blank"
                 rel="noreferrer"
               >
