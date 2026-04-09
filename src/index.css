@@ -43,8 +43,8 @@ html[data-theme='dark'] {
   --accent-strong: #6ee7b7;
   --accent-tint: rgba(52, 211, 153, 0.14);
   --accent-line: rgba(52, 211, 153, 0.3);
-  --user-bubble-start: rgba(35, 38, 42, 0.98);
-  --user-bubble-end: rgba(45, 52, 57, 0.98);
+  --user-bubble-start: rgba(6, 78, 59, 0.96);
+  --user-bubble-end: rgba(17, 94, 89, 0.94);
   --step-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.03), var(--panel-solid));
   --workflow-surface: linear-gradient(180deg, var(--panel-solid), rgba(255, 255, 255, 0.02));
   --action-gradient-start: #30343a;

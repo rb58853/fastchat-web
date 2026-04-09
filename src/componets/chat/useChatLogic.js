@@ -1,7 +1,42 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from '../../i18n/LanguageContext.jsx';
 
-const vps_url = "ws://77.237.243.163:8000/chat/admin?chat_id=id&token=oBd-k41TmMqib1QYalke7HRCbk_HOtE0nw1YcdkibPc="
+const buildWsUrl = () => {
+  const rawBaseUrl = (process.env.REACT_APP_WS_URL || '').trim();
+  const fallbackPath = '/';
+
+  const toWsUrl = (input) => {
+    const parsedUrl = new URL(input || fallbackPath, window.location.origin);
+
+    if (parsedUrl.protocol === 'http:') parsedUrl.protocol = 'ws:';
+    if (parsedUrl.protocol === 'https:') parsedUrl.protocol = 'wss:';
+
+    return parsedUrl;
+  };
+
+  let url;
+
+  try {
+    url = toWsUrl(rawBaseUrl);
+  } catch (error) {
+    console.error('Invalid REACT_APP_WS_URL, using fallback URL.', error);
+    url = toWsUrl(fallbackPath);
+  }
+
+  url.pathname = '/chat/admin';
+
+  const chatId = (process.env.REACT_APP_CHAT_ID || '').trim();
+  if (chatId) {
+    url.searchParams.set('chat_id', chatId);
+  } else {
+    url.searchParams.delete('chat_id');
+  }
+
+  const token = (process.env.REACT_APP_TOKEN || '').trim();
+  if (token) url.searchParams.set('token', token);
+
+  return url.toString();
+};
 
 export default function useChatLogic() {
   const { t } = useLanguage();
@@ -239,7 +274,7 @@ export default function useChatLogic() {
   }, [appendWorkflowStep, describeWorkflowStep, hasRenderableData, isLoadingActionStep, nextMessageId]);
 
   useEffect(() => {
-    const ws = new WebSocket(vps_url);
+    const ws = new WebSocket(buildWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => {

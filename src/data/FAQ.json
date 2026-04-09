@@ -1,8 +1,8 @@
 {
     "questions": [
-        "¿Que es Fastchat?",
-        "¿Qué tipos de consultas puedo hacer?",
-        "Envia la informacion de las ventas a Pedro Alvarez",
-        "Envia la informacion de las ventas a cada uno de los clientes que viven en Estados Unidos"
+        "What tools are available on this MCP server?",
+        "List all resources exposed by the server.",
+        "Use the file tool to read README.md.",
+        "What transport protocol is being used?"
     ]
 }

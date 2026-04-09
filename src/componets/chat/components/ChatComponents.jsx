@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import { useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './styles.css';
@@ -8,11 +9,8 @@ import { useLanguage } from '../../../i18n/LanguageContext.jsx';
 
 
 export function UserQueryComponent({ input }) {
-    const { t } = useLanguage();
-
     return (
         <div className="message-card user-query-container">
-            <span className="message-label">{t.messageLabels.user}</span>
             <p className="user-query-text">{input}</p>
         </div>
     );
@@ -20,6 +18,9 @@ export function UserQueryComponent({ input }) {
 
 export function SubqueryBlock({ subquery }) {
     const { t } = useLanguage();
+    const [isFlowOpen, setIsFlowOpen] = useState(false);
+    const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
+    const [hasClosedOnResponse, setHasClosedOnResponse] = useState(false);
     const isSubqueryKey = (key) => /querys|queries|subqueries|subquery/i.test(key);
     const isPromptKey = (key) => /selected[_\s-]?prompt|prompt[_\s-]?selected|prompt/i.test(key);
 
@@ -27,7 +28,6 @@ export function SubqueryBlock({ subquery }) {
         if (isSubqueryKey(key) && Array.isArray(value)) {
             return (
                 <div>
-                    <h4 className="data-key">Subqueries:</h4>
                     <ul className="data-list">
                         {value.map((item, idx) => (
                             <li key={idx}>{String(item)}</li>
@@ -112,82 +112,116 @@ export function SubqueryBlock({ subquery }) {
         return false;
     });
 
+    const nonResponseSections = sections.filter((section) => section.type !== 'response' && section.type !== 'query');
+    const responseSections = sections.filter((section) => section.type === 'response');
+    const hasResponseStarted = responseSections.some((section) => Boolean(section.response?.trim()));
+    const executedSubquery = sections.find((section) => section.type === 'query' && section.query?.trim())?.query;
+    const hasFlowDropdown = Boolean(executedSubquery) || nonResponseSections.length > 0;
+
+    useEffect(() => {
+        if (hasFlowDropdown && !hasOpenedOnce) {
+            setIsFlowOpen(true);
+            setHasOpenedOnce(true);
+        }
+    }, [hasFlowDropdown, hasOpenedOnce]);
+
+    useEffect(() => {
+        if (hasResponseStarted && !hasClosedOnResponse) {
+            setIsFlowOpen(false);
+            setHasClosedOnResponse(true);
+        }
+    }, [hasResponseStarted, hasClosedOnResponse]);
+
     if (sections.length === 0) {
         return null;
     }
 
-    return (
-        <div className="message-card subquery-block">
-            {sections.map((section, index) => (
-                <div
-                    key={section.id || `${section.type}-${index}`}
-                    className={`subquery-section section-${section.type}`}
-                >
-                    {index > 0 && <hr className="subquery-divider" />}
-                    {section.type === 'query' && (
-                        <>
-                            <span className="message-label">{t.messageLabels.query}</span>
-                            <h3 className="query-text">{section.query}</h3>
-                        </>
-                    )}
+    const renderSection = (section, index, withDivider = true) => (
+        <div
+            key={section.id || `${section.type}-${index}`}
+            className={`subquery-section section-${section.type}`}
+        >
+            {withDivider && index > 0 && <hr className="subquery-divider" />}
+            {section.type === 'step' && (
+                <>
+                    <p className="step-inline-row">
+                        <span className="step-inline-key">{section.step}:</span>
+                        <span className="step-inline-value">{section.message}</span>
+                    </p>
+                </>
+            )}
 
-                    {section.type === 'step' && (
-                        <>
-                            <p className="step-inline-row">
-                                <span className="step-inline-key">{section.step}:</span>
-                                <span className="step-inline-value">{section.message}</span>
-                            </p>
-                        </>
-                    )}
+            {section.type === 'data' && (
+                <>
+                    {Object.entries(section.data || {}).map(([key, value]) => {
+                        if (value === null || value === undefined) return null;
+                        if (typeof value === 'string' && !value.trim()) return null;
+                        if (Array.isArray(value) && value.length === 0) return null;
+                        if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return null;
 
-                    {section.type === 'data' && (
-                        <>
-                            {Object.entries(section.data || {}).map(([key, value]) => {
-                                if (value === null || value === undefined) return null;
-                                if (typeof value === 'string' && !value.trim()) return null;
-                                if (Array.isArray(value) && value.length === 0) return null;
-                                if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return null;
-
-                                return (
-                                    <div key={key} className="data-section">
-                                            {renderDataValue(key, value)}
-                                    </div>
-                                );
-                            })}
-                        </>
-                    )}
-
-                    {section.type === 'response' && (
-                        <>
-                            <span className="message-label">{t.messageLabels.response}</span>
-                            <div className="response-container">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm, remarkBreaks]}
-                                    components={{
-                                        code({ inline, className, children, ...props }) {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            return !inline && match ? (
-                                                <SyntaxHighlighter
-                                                    style={vscDarkPlus}
-                                                    language={match[1]}
-                                                >
-                                                    {String(children).replace(/\n$/, '')}
-                                                </SyntaxHighlighter>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        }
-                                    }}
-                                >
-                                    {section.response}
-                                </ReactMarkdown>
+                        return (
+                            <div key={key} className="data-section">
+                                {renderDataValue(key, value)}
                             </div>
-                        </>
-                    )}
+                        );
+                    })}
+                </>
+            )}
+
+            {section.type === 'response' && (
+                <>
+                    <div className="response-container">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                            components={{
+                                code({ inline, className, children, ...props }) {
+                                    const match = /language-(\w+)/.exec(className || '');
+                                    return !inline && match ? (
+                                        <SyntaxHighlighter
+                                            style={vscDarkPlus}
+                                            language={match[1]}
+                                        >
+                                            {String(children).replace(/\n$/, '')}
+                                        </SyntaxHighlighter>
+                                    ) : (
+                                        <code className={className} {...props}>
+                                            {children}
+                                        </code>
+                                    );
+                                }
+                            }}
+                        >
+                            {section.response}
+                        </ReactMarkdown>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+
+    return (
+        <div className="subquery-block">
+            {hasFlowDropdown && (
+                <div className="flow-dropdown">
+                    <button
+                        type="button"
+                        className="flow-dropdown-trigger"
+                        onClick={() => setIsFlowOpen((prev) => !prev)}
+                        aria-expanded={isFlowOpen}
+                    >
+                        <span className="flow-dropdown-title">{executedSubquery || t.messageLabels.step}</span>
+                        <span className={`flow-dropdown-icon ${isFlowOpen ? 'is-open' : ''}`}>▾</span>
+                    </button>
+
+                    <div className={`flow-dropdown-content ${isFlowOpen ? 'is-open' : 'is-closed'}`}>
+                        <div className="flow-dropdown-content-inner">
+                            {nonResponseSections.map((section, index) => renderSection(section, index))}
+                        </div>
+                    </div>
                 </div>
-            ))}
+            )}
+
+            {responseSections.map((section, index) => renderSection(section, index, false))}
         </div>
     );
 }
