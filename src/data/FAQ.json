@@ -1,8 +1,0 @@
-{
-    "questions": [
-        "What tools are available on this MCP server?",
-        "List all resources exposed by the server.",
-        "Use the file tool to read README.md.",
-        "What transport protocol is being used?"
-    ]
-}

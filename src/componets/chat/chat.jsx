@@ -1,36 +1,10 @@
 import useChatLogic from "./useChatLogic";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import "./style/desktop.css";
 import { Icon } from '@iconify/react/dist/iconify.js'
 import { SubqueryBlock, UserQueryComponent, WorkflowLoader } from './components/ChatComponents';
 import { useLanguage } from '../../i18n/LanguageContext.jsx';
-
-const FAQList = ({
-  questions,
-  onSelectQuestion,
-  inputRef,
-  isVisible,
-}) => {
-  if (!isVisible) return null;
-
-  return (
-    <div className="faq-container">
-      {questions.map((question, index) => (
-        <div
-          key={index}
-          className="faq-item"
-          onClick={() => {
-            onSelectQuestion(question);
-            inputRef.current?.focus();
-          }}
-        >
-          {question}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const Chat = () => {
   const { t } = useLanguage();
@@ -44,7 +18,6 @@ const Chat = () => {
     workflowSteps,
     activeWorkflowStep,
   } = useChatLogic();
-  const [showFAQ, setShowFAQ] = useState(true);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -58,11 +31,6 @@ const Chat = () => {
 
   const _sendMessage = () => {
     sendMessage();
-    setShowFAQ(false);
-  };
-
-  const handleFAQClick = (question) => {
-    setInput(question);
   };
 
   const handleInputChange = (event) => {
@@ -70,6 +38,7 @@ const Chat = () => {
   };
 
   const hasMessages = messages.length > 0;
+  const isIdle = !hasMessages && !isProcessing && !input.trim();
   const statusText = t.chat.status[connectionStatus];
 
   let screen = ConnectionScreens(connectionStatus, t);
@@ -78,7 +47,7 @@ const Chat = () => {
   }
 
   return (
-    <section className="chat-shell">
+    <section className={`chat-shell ${isIdle ? 'chat-shell-idle' : ''}`}>
       <header className="chat-header">
         <div className="chat-header-copy">
           <p className="chat-eyebrow">Fastchat</p>
@@ -88,8 +57,8 @@ const Chat = () => {
         <span className={`chat-status-pill status-${connectionStatus}`}>{statusText}</span>
       </header>
 
-      <div className={`chat-surface ${hasMessages ? 'chat-surface-active' : ''}`}>
-        {!hasMessages && (
+      <div className={`chat-surface ${hasMessages ? 'chat-surface-active' : ''} ${isIdle ? 'chat-surface-idle' : ''}`}>
+        {isIdle && (
           <div className="chat-empty-state">
             <div className="chat-empty-copy">
               <p className="chat-empty-kicker">{t.chat.emptyKicker}</p>
@@ -99,7 +68,7 @@ const Chat = () => {
           </div>
         )}
 
-        <div className="chat-box">
+        <div className={`chat-box ${isIdle ? 'chat-box-idle' : ''}`}>
           {messages.map((msg) => (
             <div key={msg.id} className="chat-message">
               {msg.kind === 'user' ? (
@@ -117,16 +86,39 @@ const Chat = () => {
             />
           )}
         </div>
+
+        {isIdle && (
+          <div className="composer-shell composer-shell-centered">
+            <div className="composer-meta">
+              <span>{t.chat.composerLeft}</span>
+              <span>{t.chat.composerRight}</span>
+            </div>
+
+            <div className="input-container">
+              <textarea
+                ref={inputRef}
+                className="chat-input"
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    _sendMessage();
+                  }
+                }}
+                placeholder={t.chat.placeholder}
+                rows={1}
+              />
+              <button className="chat-button" onClick={_sendMessage} disabled={!input.trim()}>
+                <Icon icon="majesticons:send" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {!isIdle && (
       <div className="composer-shell">
-        <FAQList
-          questions={t.chat.faq}
-          onSelectQuestion={handleFAQClick}
-          inputRef={inputRef}
-          isVisible={showFAQ && !isProcessing}
-        />
-
         <div className="composer-meta">
           <span>{t.chat.composerLeft}</span>
           <span>{t.chat.composerRight}</span>
@@ -152,6 +144,7 @@ const Chat = () => {
           </button>
         </div>
       </div>
+      )}
     </section>
   );
 };

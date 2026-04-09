@@ -1,6 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from '../../i18n/LanguageContext.jsx';
 
+const ADDITIONAL_SERVERS_STORAGE_KEY = 'fastchat-additional-servers';
+
+const readAdditionalServersFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(ADDITIONAL_SERVERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsed;
+  } catch (error) {
+    return null;
+  }
+};
+
 const buildWsUrl = () => {
   const rawBaseUrl = (process.env.REACT_APP_WS_URL || '').trim();
   const fallbackPath = '/';
@@ -47,6 +61,7 @@ export default function useChatLogic() {
   const [workflowSteps, setWorkflowSteps] = useState([]);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState('');
   const wsRef = useRef(null);
+  const additionalServersSentRef = useRef(false);
   const messageIdRef = useRef(0);
   const workflowKeyRef = useRef(0);
   const currentSubqueryIdRef = useRef(null);
@@ -276,6 +291,7 @@ export default function useChatLogic() {
   useEffect(() => {
     const ws = new WebSocket(buildWsUrl());
     wsRef.current = ws;
+    additionalServersSentRef.current = false;
 
     ws.onopen = () => {
       console.log("✅ Conectado al servidor WebSocket");
@@ -318,6 +334,19 @@ export default function useChatLogic() {
   const sendMessage = () => {
     if (input.trim() && wsRef.current?.readyState === WebSocket.OPEN) {
       const submittedInput = input.trim();
+      const additionalServers = readAdditionalServersFromStorage();
+
+      if (!additionalServersSentRef.current) {
+        if (additionalServers && Object.keys(additionalServers).length > 0) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'additional_servers',
+              data: additionalServers,
+            }),
+          );
+        }
+        additionalServersSentRef.current = true;
+      }
 
       wsRef.current.send(input);
       setMessages((prev) => [
